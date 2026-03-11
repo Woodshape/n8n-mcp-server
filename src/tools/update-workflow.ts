@@ -32,6 +32,20 @@ const NodePatchSchema = z.object({
     .describe("Credentials to set on the node"),
 });
 
+const NodeReplacementSchema = z.object({
+  name: z.string().describe("Name of the node to replace (must match exactly)"),
+  type: z.string().describe("New node type (e.g. n8n-nodes-base.code)"),
+  typeVersion: z.number().default(1).describe("New node type version"),
+  parameters: z
+    .record(z.unknown())
+    .default({})
+    .describe("New node parameters (replaces all existing parameters)"),
+  credentials: z
+    .record(z.unknown())
+    .optional()
+    .describe("New node credentials"),
+});
+
 export function registerUpdateWorkflow(server: McpServer, client: N8nClient) {
   server.tool(
     "update_workflow",
@@ -47,6 +61,10 @@ export function registerUpdateWorkflow(server: McpServer, client: N8nClient) {
         .array(NodePatchSchema)
         .optional()
         .describe("Patch specific nodes by name. Merges into existing nodes without replacing the full array. Use this instead of nodes when updating one or a few nodes."),
+      nodeReplacements: z
+        .array(NodeReplacementSchema)
+        .optional()
+        .describe("Replace specific nodes by name — changes type, typeVersion, and parameters while preserving the node's name, id, and position. Use when you need to change a node's type (e.g. httpRequest → code)."),
       connections: z
         .record(z.unknown())
         .optional()
@@ -60,7 +78,7 @@ export function registerUpdateWorkflow(server: McpServer, client: N8nClient) {
         .optional()
         .describe("Activate or deactivate the workflow"),
     },
-    async ({ id, name, nodes, nodePatches, connections, settings, active }) => {
+    async ({ id, name, nodes, nodePatches, nodeReplacements, connections, settings, active }) => {
       // Fetch current workflow to merge with
       const current = await client.get<Record<string, unknown>>(
         `/api/v1/workflows/${id}`,
@@ -81,6 +99,23 @@ export function registerUpdateWorkflow(server: McpServer, client: N8nClient) {
           id: n.id ?? crypto.randomUUID(),
           position: n.position ?? [250 * i, 300],
         }));
+      }
+
+      if (nodeReplacements !== undefined) {
+        const currentNodes = update.nodes as Record<string, unknown>[];
+        update.nodes = currentNodes.map((node) => {
+          const replacement = nodeReplacements.find((r) => r.name === node.name);
+          if (!replacement) return node;
+          return {
+            id: node.id,
+            name: node.name,
+            position: node.position,
+            type: replacement.type,
+            typeVersion: replacement.typeVersion,
+            parameters: replacement.parameters,
+            ...(replacement.credentials !== undefined && { credentials: replacement.credentials }),
+          };
+        });
       }
 
       if (nodePatches !== undefined) {

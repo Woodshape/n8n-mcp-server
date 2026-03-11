@@ -68,6 +68,19 @@ export class N8nClient {
     return res.json() as Promise<T>;
   }
 
+  async delete<T = unknown>(path: string): Promise<T> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: "DELETE",
+      headers: this.headers(),
+    });
+    if (!res.ok) {
+      throw new Error(
+        `DELETE ${path} failed: ${res.status} ${await res.text()}`,
+      );
+    }
+    return res.json() as Promise<T>;
+  }
+
   /** GET using session cookie auth (for internal endpoints like /types/nodes.json) */
   async getInternal<T = unknown>(path: string): Promise<T> {
     await this.ensureSession();

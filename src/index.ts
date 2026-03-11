@@ -10,6 +10,7 @@ import { registerTestWorkflow } from "./tools/test-workflow.js";
 import { registerGetExecution } from "./tools/get-execution.js";
 import { registerGetNodeTypes } from "./tools/get-node-types.js";
 import { registerUpdateWorkflow } from "./tools/update-workflow.js";
+import { registerDeleteWorkflow } from "./tools/delete-workflow.js";
 import { registerListExecutions } from "./tools/list-executions.js";
 
 const baseUrl = process.env.N8N_API_URL;
@@ -38,6 +39,7 @@ registerTestWorkflow(server, client);
 registerGetExecution(server, client);
 registerGetNodeTypes(server, client);
 registerUpdateWorkflow(server, client);
+registerDeleteWorkflow(server, client);
 registerListExecutions(server, client);
 
 const transport = new StdioServerTransport();

@@ -26,19 +26,39 @@ interface ExecutionData {
   };
 }
 
+function truncateStrings(obj: unknown, maxLen: number): unknown {
+  if (typeof obj === "string") {
+    return obj.length > maxLen ? obj.slice(0, maxLen) + "…" : obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => truncateStrings(item, maxLen));
+  }
+  if (obj !== null && typeof obj === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = truncateStrings(value, maxLen);
+    }
+    return result;
+  }
+  return obj;
+}
+
 export function registerGetExecution(server: McpServer, client: N8nClient) {
   server.tool(
     "get_execution",
-    "Get execution details by ID. Shows status, timing, node results, and errors for debugging.",
+    "Get execution details by ID. Shows status, timing, node results, and errors for debugging. By default returns compact summaries with truncated output samples. Use nodeName to get full output for specific nodes.",
     {
       id: z.string().describe("Execution ID"),
+      nodeName: z
+        .string()
+        .optional()
+        .describe("Filter to a specific node by name — returns full (untruncated) output for that node"),
     },
-    async ({ id }) => {
+    async ({ id, nodeName }) => {
       const exec = await client.get<ExecutionData>(
         `/api/v1/executions/${id}?includeData=true`,
       );
 
-      // Build a concise debug summary
       const summary: Record<string, unknown> = {
         id: exec.id,
         status: exec.status,
@@ -53,16 +73,23 @@ export function registerGetExecution(server: McpServer, client: N8nClient) {
       if (runData) {
         const nodes: Record<string, unknown> = {};
         for (const [name, runs] of Object.entries(runData)) {
+          if (nodeName && name !== nodeName) continue;
           const last = runs[runs.length - 1];
+          const outputItems =
+            last.data?.main?.reduce(
+              (sum, branch) => sum + branch.length,
+              0,
+            ) ?? 0;
+          const rawSample = last.data?.main?.[0]?.slice(0, 3).map((i) => i.json);
+          const outputSample = nodeName
+            ? rawSample
+            : truncateStrings(rawSample, 200);
+
           nodes[name] = {
             executionTime: last.executionTime,
             error: last.error?.message ?? null,
-            outputItems:
-              last.data?.main?.reduce(
-                (sum, branch) => sum + branch.length,
-                0,
-              ) ?? 0,
-            outputSample: last.data?.main?.[0]?.slice(0, 3).map((i) => i.json),
+            outputItems,
+            outputSample,
           };
         }
         summary.nodes = nodes;
