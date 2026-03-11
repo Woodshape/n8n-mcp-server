@@ -152,8 +152,10 @@ Note: `create_workflow` also validates internally and will reject structurally b
 
 1. Start with `get_workflow_outline(id)` to see the current structure
 2. Use `get_workflow_node(id, nodeName: "Target Node")` to read the node(s) you plan to change
-3. Use `update_workflow` with `nodePatches` to modify specific nodes — this avoids sending the full node array
-4. Only use `update_workflow` with `nodes` when replacing the entire node set
+3. **MANDATORY: Before every `update_workflow` call, run `validate_workflow`** (see Pre-Update Validation below)
+4. Use `update_workflow` with `nodePatches` to modify specific nodes — this avoids sending the full node array
+5. Only use `update_workflow` with `nodes` when replacing the entire node set
+6. After the update, verify with `get_workflow_outline` and spot-check modified nodes with `get_workflow_node`
 
 **Prefer `nodePatches` over `nodes` when updating specific nodes.** `nodePatches` lets you update one or a few nodes by name without sending the full array — which would be too large to pass inline:
 
@@ -191,17 +193,20 @@ Note: `create_workflow` also validates internally and will reject structurally b
 
 Only use `nodes` (full array) when restructuring the entire workflow (adding/removing nodes, reordering). When you do need the full array, call `validate_workflow` with the proposed `nodes` and `connections` first, then use an Agent to handle the large payload.
 
-### Pre-Flight Validation
+### Pre-Update Validation (MANDATORY)
 
-Before calling `create_workflow` or `update_workflow` with a full `nodes` array, validate the proposed structure:
+**Before EVERY `create_workflow` or `update_workflow` call, you MUST validate the workflow.** This catches structural problems before they are saved.
 
-1. Call `validate_workflow` with your proposed `nodes` and `connections`
-2. If errors are returned, fix the structural issues before proceeding
-3. Warnings (orphaned nodes) may be acceptable — review them but they don't block
+**Validation steps:**
 
-For `nodePatches`-only updates, pre-flight validation is optional — `update_workflow` validates internally after merging patches.
+1. For `create_workflow` or `update_workflow` with full `nodes` array: call `validate_workflow` with the proposed `nodes` and `connections`
+2. For `nodePatches`-only updates: call `validate_workflow(workflowId)` to confirm the existing workflow is structurally sound before patching
+3. If errors are returned, fix the structural issues before proceeding
+4. Warnings (orphaned nodes) may be acceptable — review them but they don't block
 
-To audit an existing workflow's structure, call `validate_workflow` with just the `workflowId`.
+**If validation fails:** Fix immediately. Do NOT proceed with create/update.
+
+To audit an existing workflow's structure at any time, call `validate_workflow` with just the `workflowId`.
 
 ### Testing a Workflow
 
@@ -498,6 +503,7 @@ When building a workflow from scratch:
 - **Calling `get_workflow` for a deep investigation** — even fetching 14 of 19 nodes individually uses 70% less data than one `get_workflow` call.
 - **Using `update_workflow` with full `nodes` array to change one node** — use `nodePatches` instead.
 - **Calling `get_workflow` after an update just to verify** — use `get_workflow_outline` to confirm structure, or `get_workflow_node` to verify the specific node you changed.
+- **Skipping pre-update validation** — ALWAYS call `validate_workflow` before `update_workflow` or `create_workflow`. Catching structural problems after saving is too late. Also run `get_workflow_outline` after the update to verify node count and connections.
 
 ## Instance Details
 
