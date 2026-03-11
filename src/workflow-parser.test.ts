@@ -483,3 +483,43 @@ describe("phonemo fixture", () => {
     });
   });
 });
+
+// --- Phonemo as workspace template (validate_workflow tool scenarios) ---
+
+describe("phonemo template validation", () => {
+  it("validates the full template with no errors or warnings", () => {
+    const result = validateWorkflow(phonemo.nodes, phonemo.connections);
+    expect(result).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+
+  it("validates a minimal subset of nodes with matching connections", () => {
+    const subset = phonemo.nodes.filter((n) =>
+      ["Telegram Trigger", "Extract Audio", "Route Input"].includes(n.name),
+    );
+    const conns = makeConnections([
+      { from: "Telegram Trigger", to: "Extract Audio" },
+      { from: "Extract Audio", to: "Route Input" },
+    ]);
+    const result = validateWorkflow(subset, conns);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it("rejects the template when a node is removed but connections remain", () => {
+    const without = phonemo.nodes.filter((n) => n.name !== "Prepare Summary Request");
+    const result = validateWorkflow(without, phonemo.connections);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("Prepare Summary Request"))).toBe(true);
+  });
+
+  it("accepts the template with only nodes and empty connections", () => {
+    const result = validateWorkflow(phonemo.nodes, {});
+    expect(result.valid).toBe(true);
+    // All non-trigger nodes become orphaned warnings
+    const triggerTypes = ["trigger", "webhook", "schedule", "manual"];
+    const nonTriggerCount = phonemo.nodes.filter(
+      (n) => !triggerTypes.some((t) => n.type.toLowerCase().includes(t)),
+    ).length;
+    expect(result.warnings).toHaveLength(nonTriggerCount);
+  });
+});

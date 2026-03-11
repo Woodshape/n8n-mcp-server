@@ -11,7 +11,7 @@ npm run start          # node dist/index.js (needs env vars)
 ```
 
 ```bash
-npm test               # vitest run (55 tests)
+npm test               # vitest run (59 tests)
 ```
 
 No linter is configured.
@@ -36,7 +36,7 @@ This is an MCP server that exposes n8n workflow automation as tools for Claude C
 
 **Global MCP config:** `~/.claude/.mcp.json` points to `run.sh`, making these tools available from any directory.
 
-**Workflow validation:** `src/workflow-parser.ts` exports `validateWorkflow(nodes, connections)` — checks orphaned connections (errors) and unreachable non-trigger nodes (warnings). Called by `update_workflow` before saving.
+**Workflow validation:** `src/workflow-parser.ts` exports `validateWorkflow(nodes, connections)` — checks orphaned connections (errors) and unreachable non-trigger nodes (warnings). Called by both `update_workflow` and `create_workflow` before saving. Also exposed as a standalone `validate_workflow` MCP tool for pre-flight checks.
 
 ## Adding a New Tool
 

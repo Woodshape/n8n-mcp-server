@@ -38,6 +38,12 @@ All n8n operations go through the local MCP server. Never use SSH for n8n operat
 | `mcp__n8n-mcp-server__update_workflow` | Update an existing workflow (merge-update, supports `nodePatches` and `nodeReplacements`) |
 | `mcp__n8n-mcp-server__delete_workflow` | Delete a workflow by ID |
 
+### Validation
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__n8n-mcp-server__validate_workflow` | Validate workflow structure without saving — use before create/update to catch structural problems early |
+
 ### Testing and debugging
 
 | Tool | Purpose |
@@ -134,10 +140,13 @@ For anything else, outline + targeted node fetches wins.
 ### Creating a Workflow
 
 1. Use `get_node_types` to look up exact node type names and parameters
-2. Use `create_workflow` with nodes and connections
-3. Every node needs: `name`, `type`, `typeVersion`, `position`, `parameters`
-4. Nodes requiring credentials need a `credentials` field referencing existing credential IDs
-5. Positions should space nodes ~240px apart horizontally
+2. Call `validate_workflow` with the proposed `nodes` and `connections` to catch structural problems before saving
+3. Use `create_workflow` with nodes and connections
+4. Every node needs: `name`, `type`, `typeVersion`, `position`, `parameters`
+5. Nodes requiring credentials need a `credentials` field referencing existing credential IDs
+6. Positions should space nodes ~240px apart horizontally
+
+Note: `create_workflow` also validates internally and will reject structurally broken workflows.
 
 ### Updating a Workflow
 
@@ -180,7 +189,19 @@ For anything else, outline + targeted node fetches wins.
 }
 ```
 
-Only use `nodes` (full array) when restructuring the entire workflow (adding/removing nodes, reordering). When you do need the full array, use an Agent to handle the large payload.
+Only use `nodes` (full array) when restructuring the entire workflow (adding/removing nodes, reordering). When you do need the full array, call `validate_workflow` with the proposed `nodes` and `connections` first, then use an Agent to handle the large payload.
+
+### Pre-Flight Validation
+
+Before calling `create_workflow` or `update_workflow` with a full `nodes` array, validate the proposed structure:
+
+1. Call `validate_workflow` with your proposed `nodes` and `connections`
+2. If errors are returned, fix the structural issues before proceeding
+3. Warnings (orphaned nodes) may be acceptable — review them but they don't block
+
+For `nodePatches`-only updates, pre-flight validation is optional — `update_workflow` validates internally after merging patches.
+
+To audit an existing workflow's structure, call `validate_workflow` with just the `workflowId`.
 
 ### Testing a Workflow
 

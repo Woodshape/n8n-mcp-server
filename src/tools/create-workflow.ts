@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { N8nClient } from "../client.js";
+import type { WorkflowNode, WorkflowConnections } from "../types.js";
+import { validateWorkflow } from "../workflow-parser.js";
 
 const NodeSchema = z.object({
   id: z.string().optional().describe("Node ID (auto-generated if omitted)"),
@@ -50,6 +52,25 @@ export function registerCreateWorkflow(server: McpServer, client: N8nClient) {
         position: n.position ?? [250 * i, 300],
       }));
 
+      const validation = validateWorkflow(
+        nodesWithIds as WorkflowNode[],
+        connections as WorkflowConnections,
+      );
+
+      if (!validation.valid) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              error: "Workflow validation failed — workflow was NOT created",
+              errors: validation.errors,
+              warnings: validation.warnings,
+            }, null, 2),
+          }],
+          isError: true,
+        };
+      }
+
       const body: Record<string, unknown> = {
         name,
         nodes: nodesWithIds,
@@ -88,6 +109,9 @@ export function registerCreateWorkflow(server: McpServer, client: N8nClient) {
                 active: created.active,
                 nodeCount: nodesWithIds.length,
                 message: "Workflow created successfully",
+                ...(validation.warnings.length > 0 && {
+                  warnings: validation.warnings,
+                }),
               },
               null,
               2,
