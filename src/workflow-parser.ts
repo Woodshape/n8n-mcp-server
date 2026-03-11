@@ -1,6 +1,7 @@
 import type {
   Workflow,
   WorkflowNode,
+  WorkflowConnections,
   ConnectionEdge,
 } from "./types.js";
 
@@ -59,9 +60,8 @@ export function getNodeConnections(
   };
 }
 
-function flattenConnections(workflow: Workflow): ConnectionEdge[] {
+export function flattenConnectionsRaw(conns: WorkflowConnections): ConnectionEdge[] {
   const edges: ConnectionEdge[] = [];
-  const conns = workflow.connections;
   if (!conns) return edges;
 
   for (const sourceName of Object.keys(conns)) {
@@ -84,4 +84,51 @@ function flattenConnections(workflow: Workflow): ConnectionEdge[] {
   }
 
   return edges;
+}
+
+function flattenConnections(workflow: Workflow): ConnectionEdge[] {
+  return flattenConnectionsRaw(workflow.connections);
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export function validateWorkflow(
+  nodes: WorkflowNode[],
+  connections: WorkflowConnections,
+): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const nodeNames = new Set(nodes.map((n) => n.name));
+
+  const edges = flattenConnectionsRaw(connections);
+  for (const edge of edges) {
+    if (!nodeNames.has(edge.from)) {
+      errors.push(`Connection source "${edge.from}" not found in nodes array`);
+    }
+    if (!nodeNames.has(edge.to)) {
+      errors.push(`Connection target "${edge.to}" not found in nodes array`);
+    }
+  }
+
+  // Warn about unreachable non-trigger nodes
+  const connectedNodes = new Set<string>();
+  for (const edge of edges) {
+    connectedNodes.add(edge.from);
+    connectedNodes.add(edge.to);
+  }
+  const triggerTypes = ["trigger", "webhook", "schedule", "manual"];
+  for (const node of nodes) {
+    const isTrigger = triggerTypes.some((t) =>
+      node.type.toLowerCase().includes(t),
+    );
+    if (!isTrigger && !connectedNodes.has(node.name)) {
+      warnings.push(`Node "${node.name}" has no connections (orphaned)`);
+    }
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
 }

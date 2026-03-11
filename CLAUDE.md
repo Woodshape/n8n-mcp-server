@@ -10,7 +10,17 @@ npm run start          # node dist/index.js (needs env vars)
 ./run.sh               # sources .env then runs dist/index.js
 ```
 
-No test framework is configured. No linter is configured.
+```bash
+npm test               # vitest run (55 tests)
+```
+
+No linter is configured.
+
+### Test suite
+
+Tests live in `src/workflow-parser.test.ts` using vitest. Run after any change to `src/workflow-parser.ts` or `src/tools/update-workflow.ts`.
+
+**Fixture:** `src/fixtures/phonemo-workflow.json` — stripped-down 22-node workflow from production (Phonemo `tIfbOLa8RBZM9QmB`). Use for tests needing IF branching, multiple entry points, or converging paths. Helpers `makeNode()` and `makeConnections()` available for simpler synthetic tests.
 
 ## Architecture
 
@@ -25,6 +35,8 @@ This is an MCP server that exposes n8n workflow automation as tools for Claude C
 **Tool pattern:** Each tool lives in `src/tools/<name>.ts` and exports a `register<Name>(server, client)` function that calls `server.tool()` with a name, description, zod schema for params, and an async handler. Tools return `{ content: [{ type: "text", text: string }] }`. Error responses add `isError: true`.
 
 **Global MCP config:** `~/.claude/.mcp.json` points to `run.sh`, making these tools available from any directory.
+
+**Workflow validation:** `src/workflow-parser.ts` exports `validateWorkflow(nodes, connections)` — checks orphaned connections (errors) and unreachable non-trigger nodes (warnings). Called by `update_workflow` before saving.
 
 ## Adding a New Tool
 

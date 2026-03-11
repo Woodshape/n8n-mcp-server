@@ -1,0 +1,100 @@
+{
+  "id": "tIfbOLa8RBZM9QmB",
+  "name": "Phonemo",
+  "active": false,
+  "nodes": [
+    { "id": "a0a0a0a0-0001", "name": "Telegram Trigger", "type": "n8n-nodes-base.telegramTrigger", "typeVersion": 1.2, "position": [112, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0002", "name": "Extract Audio", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [304, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0003", "name": "Route Input", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [464, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0004", "name": "Fetch YouTube Transcript", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [912, 112], "parameters": {} },
+    { "id": "a0a0a0a0-0005", "name": "Get File Info", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [672, 320], "parameters": {} },
+    { "id": "a0a0a0a0-0006", "name": "Read & Split Audio", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [912, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0007", "name": "Transcribe Chunk", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1120, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0008", "name": "Merge Transcripts", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1344, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0009", "name": "Prepare Summary Request", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1568, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0010", "name": "Summarize Transcript", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1792, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0011", "name": "Format Message", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [2000, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0012", "name": "Route Output", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [2176, 304], "parameters": {} },
+    { "id": "a0a0a0a0-0013", "name": "Send Result", "type": "n8n-nodes-base.telegram", "typeVersion": 1.2, "position": [2416, 288], "parameters": {} },
+    { "id": "a0a0a0a0-0014", "name": "Prepare Detailed Request", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [2640, 288], "parameters": {} },
+    { "id": "a0a0a0a0-0015", "name": "Generate Detailed Summary", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [2864, 288], "parameters": {} },
+    { "id": "a0a0a0a0-0016", "name": "Generate PDF", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [3088, 288], "parameters": {} },
+    { "id": "a0a0a0a0-0017", "name": "Send PDF", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [3312, 288], "parameters": {} },
+    { "id": "a0a0a0a0-0018", "name": "Webhook", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [192, 688], "parameters": {} },
+    { "id": "a0a0a0a0-0019", "name": "Webhook Extract", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [416, 704], "parameters": {} },
+    { "id": "a0a0a0a0-0020", "name": "Route Webhook", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [608, 704], "parameters": {} },
+    { "id": "a0a0a0a0-0021", "name": "Respond to Webhook", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [2576, 704], "parameters": {} },
+    { "id": "a0a0a0a0-0022", "name": "Test Generate PDF", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [2352, 704], "parameters": {} }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "Extract Audio", "type": "main", "index": 0 }]]
+    },
+    "Extract Audio": {
+      "main": [[{ "node": "Route Input", "type": "main", "index": 0 }]]
+    },
+    "Route Input": {
+      "main": [
+        [{ "node": "Fetch YouTube Transcript", "type": "main", "index": 0 }],
+        [{ "node": "Get File Info", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch YouTube Transcript": {
+      "main": [[{ "node": "Merge Transcripts", "type": "main", "index": 0 }]]
+    },
+    "Get File Info": {
+      "main": [[{ "node": "Read & Split Audio", "type": "main", "index": 0 }]]
+    },
+    "Read & Split Audio": {
+      "main": [[{ "node": "Transcribe Chunk", "type": "main", "index": 0 }]]
+    },
+    "Transcribe Chunk": {
+      "main": [[{ "node": "Merge Transcripts", "type": "main", "index": 0 }]]
+    },
+    "Webhook": {
+      "main": [[{ "node": "Webhook Extract", "type": "main", "index": 0 }]]
+    },
+    "Webhook Extract": {
+      "main": [[{ "node": "Route Webhook", "type": "main", "index": 0 }]]
+    },
+    "Route Webhook": {
+      "main": [
+        [{ "node": "Fetch YouTube Transcript", "type": "main", "index": 0 }],
+        [{ "node": "Read & Split Audio", "type": "main", "index": 0 }]
+      ]
+    },
+    "Merge Transcripts": {
+      "main": [[{ "node": "Prepare Summary Request", "type": "main", "index": 0 }]]
+    },
+    "Prepare Summary Request": {
+      "main": [[{ "node": "Summarize Transcript", "type": "main", "index": 0 }]]
+    },
+    "Summarize Transcript": {
+      "main": [[{ "node": "Format Message", "type": "main", "index": 0 }]]
+    },
+    "Format Message": {
+      "main": [[{ "node": "Route Output", "type": "main", "index": 0 }]]
+    },
+    "Route Output": {
+      "main": [
+        [{ "node": "Send Result", "type": "main", "index": 0 }],
+        [{ "node": "Test Generate PDF", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Result": {
+      "main": [[{ "node": "Prepare Detailed Request", "type": "main", "index": 0 }]]
+    },
+    "Prepare Detailed Request": {
+      "main": [[{ "node": "Generate Detailed Summary", "type": "main", "index": 0 }]]
+    },
+    "Generate Detailed Summary": {
+      "main": [[{ "node": "Generate PDF", "type": "main", "index": 0 }]]
+    },
+    "Generate PDF": {
+      "main": [[{ "node": "Send PDF", "type": "main", "index": 0 }]]
+    },
+    "Test Generate PDF": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  }
+}

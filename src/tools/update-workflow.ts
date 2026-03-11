@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { N8nClient } from "../client.js";
+import type { WorkflowNode, WorkflowConnections } from "../types.js";
+import { validateWorkflow } from "../workflow-parser.js";
 
 const NodeSchema = z.object({
   id: z.string().optional().describe("Node ID (auto-generated if omitted)"),
@@ -118,8 +120,16 @@ export function registerUpdateWorkflow(server: McpServer, client: N8nClient) {
         });
       }
 
+      // Track missed nodePatches
+      let missedPatches: string[] = [];
+
       if (nodePatches !== undefined) {
         const currentNodes = update.nodes as Record<string, unknown>[];
+        const nodeNameSet = new Set(currentNodes.map((n) => n.name as string));
+        missedPatches = nodePatches
+          .filter((p) => !nodeNameSet.has(p.name))
+          .map((p) => p.name);
+
         update.nodes = currentNodes.map((node) => {
           const patch = nodePatches.find((p) => p.name === node.name);
           if (!patch) return node;
@@ -131,6 +141,40 @@ export function registerUpdateWorkflow(server: McpServer, client: N8nClient) {
             ...(patch.credentials !== undefined && { credentials: patch.credentials }),
           };
         });
+      }
+
+      // Validate merged workflow before saving
+      const validation = validateWorkflow(
+        update.nodes as WorkflowNode[],
+        update.connections as WorkflowConnections,
+      );
+
+      if (missedPatches.length > 0) {
+        validation.warnings.push(
+          ...missedPatches.map(
+            (name) => `nodePatches target "${name}" not found — patch was skipped`,
+          ),
+        );
+      }
+
+      if (!validation.valid) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  error: "Workflow validation failed — update was NOT saved",
+                  errors: validation.errors,
+                  warnings: validation.warnings,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+          isError: true,
+        };
       }
 
       const updated = await client.put<Record<string, unknown>>(
@@ -155,6 +199,9 @@ export function registerUpdateWorkflow(server: McpServer, client: N8nClient) {
                 name: updated.name,
                 active: updated.active,
                 message: "Workflow updated successfully",
+                ...(validation.warnings.length > 0 && {
+                  warnings: validation.warnings,
+                }),
               },
               null,
               2,
