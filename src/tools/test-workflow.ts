@@ -1,22 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { N8nClient } from "../client.js";
-
-interface WorkflowNode {
-  type: string;
-  name: string;
-  parameters?: Record<string, unknown>;
-}
-
-interface Workflow {
-  id: string;
-  name: string;
-  active: boolean;
-  nodes: WorkflowNode[];
-  connections?: unknown;
-  settings?: unknown;
-  staticData?: unknown;
-}
+import type { Workflow } from "../types.js";
 
 const TRIGGER_TYPES: Record<string, string> = {
   "n8n-nodes-base.webhook": "webhook",

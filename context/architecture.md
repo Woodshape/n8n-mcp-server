@@ -25,13 +25,26 @@
 │  └──────────────────┬────────────────────────────────┘  │
 │                     │                                   │
 │  ┌──────────────────┴────────────────────────────────┐  │
-│  │                 8 Tools                            │  │
+│  │              Shared Modules                       │  │
+│  │  types.ts          — Workflow/Node interfaces     │  │
+│  │  workflow-parser.ts — outline, node lookup, edges │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │                 10 Tools                           │  │
 │  │                                                   │  │
 │  │  ┌─────────────────┐  ┌────────────────────────┐  │  │
 │  │  │ list_workflows  │  │    get_workflow         │  │  │
 │  │  │ GET /api/v1/    │  │ GET /api/v1/            │  │  │
 │  │  │   workflows     │  │   workflows/{id}        │  │  │
 │  │  └─────────────────┘  └────────────────────────┘  │  │
+│  │                                                   │  │
+│  │  ┌──────────────────────┐ ┌─────────────────────┐ │  │
+│  │  │ get_workflow_outline │ │  get_workflow_node   │ │  │
+│  │  │ Compact structure:   │ │ Full config of node  │ │  │
+│  │  │ names, types, edges  │ │ by name or type      │ │  │
+│  │  │ (via workflow-parser)│ │ + connections         │ │  │
+│  │  └──────────────────────┘ └─────────────────────┘ │  │
 │  │                                                   │  │
 │  │  ┌─────────────────┐  ┌────────────────────────┐  │  │
 │  │  │ create_workflow │  │  update_workflow        │  │  │

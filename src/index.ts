@@ -3,6 +3,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { N8nClient } from "./client.js";
 import { registerListWorkflows } from "./tools/list-workflows.js";
 import { registerGetWorkflow } from "./tools/get-workflow.js";
+import { registerGetWorkflowOutline } from "./tools/get-workflow-outline.js";
+import { registerGetWorkflowNode } from "./tools/get-workflow-node.js";
 import { registerCreateWorkflow } from "./tools/create-workflow.js";
 import { registerTestWorkflow } from "./tools/test-workflow.js";
 import { registerGetExecution } from "./tools/get-execution.js";
@@ -29,6 +31,8 @@ const server = new McpServer({
 
 registerListWorkflows(server, client);
 registerGetWorkflow(server, client);
+registerGetWorkflowOutline(server, client);
+registerGetWorkflowNode(server, client);
 registerCreateWorkflow(server, client);
 registerTestWorkflow(server, client);
 registerGetExecution(server, client);
