@@ -1,0 +1,6 @@
+.env
+.claude/
+plans/
+node_modules/
+dist/
+*.mp3
